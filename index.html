@@ -30,6 +30,7 @@
   select, input[type=search] { font: inherit; font-size: 14px; color: var(--ink); background: var(--card);
     border: 1px solid var(--line); border-radius: 8px; padding: 6px 10px; min-width: 0; }
   input[type=search] { flex: 1 1 160px; }
+  #hotel { display: block; width: 100%; font-size: 16px; padding: 9px 12px; margin-bottom: 10px; }
   label.chk { font-size: 13px; color: var(--muted); display: inline-flex; gap: 4px; align-items: center; }
   .count { color: var(--muted); font-size: 13px; margin: 12px 0 8px; }
   .list { display: grid; gap: 8px; }
@@ -62,6 +63,8 @@
   <div class="notice" id="sample" hidden>目前是範例資料（10 家店）。到 GitHub 的 Actions 頁面執行一次「更新 FunNow 價格」，就會換成完整資料。</div>
 
   <div class="bar">
+    <input type="search" id="hotel" list="hotels" placeholder="輸入旅館名稱" autocomplete="off">
+    <datalist id="hotels"></datalist>
     <div class="seg" id="type">
       <button data-v="" class="on">全部</button><button data-v="休息">休息</button><button data-v="住宿">住宿</button>
     </div>
@@ -74,7 +77,7 @@
         <option value="price">價格最低</option>
         <option value="rating">評分最高</option>
       </select>
-      <input type="search" id="q" placeholder="搜尋店名或房型">
+      <input type="search" id="q" placeholder="搜尋房型">
       <label class="chk"><input type="checkbox" id="avail" checked>只看可預訂</label>
     </div>
   </div>
@@ -122,18 +125,22 @@ async function load() {
   const ds = [...new Set(data.branches.map(b => b.district).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'zh-Hant'));
   $('district').insertAdjacentHTML('beforeend', ds.map(d => `<option>${esc(d)}</option>`).join(''));
   const hs = [...new Set(rows.map(r => r.p.hours).filter(h => h != null))].sort((a, b) => a - b);
+  $('hotels').innerHTML = data.branches.map(b => b.name).sort((a, b) => a.localeCompare(b, 'zh-Hant')).map(n => `<option value="${esc(n)}">`).join('');
   $('hours').insertAdjacentHTML('beforeend', hs.map(h => `<option value="${h}">${h} 小時</option>`).join(''));
   render();
 }
 
 function render() {
+  const norm = t => t.toLowerCase().replace(/\s+/g, '');
+  const hn = norm($('hotel').value);
   const q = $('q').value.trim().toLowerCase(), d = $('district').value, h = $('hours').value, s = $('sort').value;
   let out = rows.filter(r =>
     (!state.type || r.p.type === state.type) &&
     (!d || r.b.district === d) &&
     (!h || String(r.p.hours) === h) &&
     (!$('avail').checked || r.p.price != null) &&
-    (!q || (r.b.name + ' ' + r.p.name).toLowerCase().includes(q)));
+    (!hn || norm(r.b.name).includes(hn)) &&
+    (!q || r.p.name.toLowerCase().includes(q)));
   const last = (v, dir) => v == null ? Infinity : v * dir;   // 沒資料的排最後
   const key = { save: r => last(r.save, -1), pct: r => last(r.pct, 1), price: r => last(r.p.price, 1), rating: r => last(r.b.rating, -1) }[s];
   out.sort((a, b) => key(a) - key(b) || (b.b.reviews || 0) - (a.b.reviews || 0));
@@ -177,6 +184,7 @@ $('type').addEventListener('click', e => {
 });
 ['hours', 'district', 'sort', 'avail'].forEach(id => $(id).addEventListener('change', render));
 $('q').addEventListener('input', render);
+$('hotel').addEventListener('input', render);
 load();
 </script>
 </body>
