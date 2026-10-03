@@ -21,6 +21,12 @@
   .wrap { max-width: 1040px; margin: 0 auto; padding: 20px 16px 60px; }
   h1 { font-size: 22px; margin: 0 0 2px; letter-spacing: .02em; }
   .sub { color: var(--muted); font-size: 13px; margin-bottom: 14px; }
+  .upd { display: flex; flex-wrap: wrap; gap: 6px 10px; align-items: center; margin-bottom: 12px; font-size: 13px; color: var(--muted); }
+  .upd button, .tokbox button { font: inherit; font-size: 14px; font-weight: 600; border: 0; border-radius: 8px; padding: 7px 16px; cursor: pointer; background: var(--accent); color: var(--bg); }
+  .upd button:disabled { opacity: .55; cursor: default; }
+  .upd a, .tokbox a { color: var(--accent); }
+  .tokbox { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; font-size: 13px; margin-bottom: 12px; }
+  .tokbox input { flex: 1 1 200px; font: inherit; font-size: 14px; color: var(--ink); background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 6px 10px; min-width: 0; }
   .notice { background: var(--accent-soft); color: var(--accent); border-radius: 8px; padding: 8px 12px; font-size: 13px; margin-bottom: 12px; }
   .bar { position: sticky; top: 0; z-index: 5; background: var(--bg); padding: 8px 0 10px; border-bottom: 1px solid var(--line); }
   .row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: 8px; }
@@ -59,7 +65,19 @@
 <div class="wrap">
   <h1>高雄住宿・休息比價</h1>
   <div class="sub" id="sub">載入中…</div>
-  <div class="sub"><a href="https://github.com/milo0624/funnow-compare/actions/workflows/update.yml" target="_blank" rel="noopener" style="color:var(--accent)">更新價格</a>（按 Run workflow，約 8 分鐘後重新整理本頁）</div>
+  <div class="upd">
+    <button id="updBtn" type="button">更新價格</button>
+    <span id="updMsg"></span>
+  </div>
+  <div class="tokbox" id="tokBox" hidden>
+    <div>第一次使用要貼上 GitHub 權杖（只存在這台裝置的瀏覽器裡）。
+      <a href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener">產生權杖</a>：
+      Repository access 選 Only select repositories → funnow-compare；Permissions → Repository permissions → Actions 選 Read and write。</div>
+    <div class="row">
+      <input type="password" id="tokIn" placeholder="github_pat_…" autocomplete="off">
+      <button id="tokSave" type="button">儲存並更新</button>
+    </div>
+  </div>
   <div class="notice" id="sample" hidden>目前是範例資料（10 家店）。到 GitHub 的 Actions 頁面執行一次「更新 FunNow 價格」，就會換成完整資料。</div>
 
   <div class="bar">
@@ -98,7 +116,7 @@
 const $ = id => document.getElementById(id);
 const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const money = n => n.toLocaleString('en-US');
-let rows = [], state = { type: '' };
+let rows = [], state = { type: '' }, lastUpdated = null;
 
 async function load() {
   let data, official = {};
@@ -118,6 +136,7 @@ async function load() {
   }
   $('sub').textContent = `FunNow 價 vs 官方價｜${data.branches.length} 家店、${rows.length} 個方案｜更新：${data.updated}`;
   $('sample').hidden = !data.sample;
+  lastUpdated = data.updated;
 
   const ds = [...new Set(data.branches.map(b => b.district).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'zh-Hant'));
   $('district').insertAdjacentHTML('beforeend', ds.map(d => `<option>${esc(d)}</option>`).join(''));
@@ -198,6 +217,76 @@ $('type').addEventListener('click', e => {
 ['day', 'hours', 'district', 'sort', 'avail'].forEach(id => $(id).addEventListener('change', render));
 $('q').addEventListener('input', render);
 $('hotel').addEventListener('input', render);
+// ---- 一鍵更新：呼叫 GitHub 執行爬蟲，跑完自動重新載入 ----
+const REPO = 'milo0624/funnow-compare', TOKEN_KEY = 'funnow_gh_token';
+const store = {
+  get() { try { return localStorage.getItem(TOKEN_KEY) || ''; } catch (e) { return ''; } },
+  set(v) { try { v ? localStorage.setItem(TOKEN_KEY, v) : localStorage.removeItem(TOKEN_KEY); } catch (e) {} },
+};
+const msg = html => { $('updMsg').innerHTML = html; };
+const manual = `<a href="https://github.com/${REPO}/actions/workflows/update.yml" target="_blank" rel="noopener">改到 GitHub 手動執行</a>`;
+
+async function startUpdate(token) {
+  $('updBtn').disabled = true;
+  msg('送出中…');
+  let res;
+  try {
+    res = await fetch(`https://api.github.com/repos/${REPO}/actions/workflows/update.yml/dispatches`, {
+      method: 'POST',
+      headers: { Authorization: 'Bearer ' + token, Accept: 'application/vnd.github+json', 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ref: 'main' }),
+    });
+  } catch (e) {
+    $('updBtn').disabled = false;
+    return msg('連不上 GitHub，請檢查網路。' + manual);
+  }
+  if (res.status !== 204) {
+    $('updBtn').disabled = false;
+    if ([401, 403, 404].includes(res.status)) {
+      store.set('');
+      $('tokBox').hidden = false;
+      return msg(`權杖無效或權限不足（${res.status}），請重新貼上。`);
+    }
+    return msg(`GitHub 回應 ${res.status}，沒有啟動更新。` + manual);
+  }
+  store.set(token);
+  $('tokBox').hidden = true;
+  const t0 = Date.now();
+  const tick = async () => {
+    const min = Math.floor((Date.now() - t0) / 60000);
+    try {
+      const d = await (await fetch('data.json?t=' + Date.now(), { cache: 'no-store' })).json();
+      if (d.updated && d.updated !== lastUpdated) return location.reload();
+    } catch (e) {}
+    if (min >= 20) {
+      $('updBtn').disabled = false;
+      return msg('超過 20 分鐘還沒有新資料，可能執行失敗。' + manual.replace('改到 GitHub 手動執行', '到 GitHub 看執行結果'));
+    }
+    msg(`更新中，約需 8 分鐘（已 ${min} 分鐘），完成後會自動重新載入。這頁可以先照常使用。`);
+    setTimeout(tick, 30000);
+  };
+  tick();
+}
+
+$('updBtn').addEventListener('click', () => {
+  const t = store.get();
+  if (t) return startUpdate(t);
+  $('tokBox').hidden = false;
+  $('tokIn').focus();
+});
+$('tokSave').addEventListener('click', () => {
+  const t = $('tokIn').value.trim();
+  if (!t) return $('tokIn').focus();
+  $('tokIn').value = '';
+  startUpdate(t);
+});
+if (store.get()) msg('<a href="#" id="tokClear">清除這台裝置的權杖</a>');
+document.addEventListener('click', e => {
+  if (e.target.id !== 'tokClear') return;
+  e.preventDefault();
+  store.set('');
+  msg('已清除權杖。');
+});
 load();
 </script>
 </body>

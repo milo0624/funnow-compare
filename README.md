@@ -20,6 +20,10 @@
 4. Actions → 「更新 FunNow 價格」→ Run workflow，跑完後 `data.json` 就是完整資料。
 5. 網址：`https://<你的帳號>.github.io/funnow-compare/`
 
+## 更新價格
+
+網頁上按「更新價格」即可（第一次要貼上 GitHub 權杖：fine-grained token，只選這個 repo，Actions 設 Read and write）。權杖只存在該裝置的瀏覽器。也可以到 Actions → 「更新 FunNow 價格」→ Run workflow 手動執行。
+
 ## 選日期
 
 網頁上可選日期，顯示那一天的 FunNow 價（當日最便宜時段）。可選範圍是更新當下 FunNow 開放預訂的日期：休息約 7 天、住宿約 30 天。更新一次約 8 分鐘。
