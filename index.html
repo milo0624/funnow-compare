@@ -1,0 +1,182 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>高雄住宿休息比價</title>
+<style>
+  :root {
+    --bg: #f6f4ef; --card: #ffffff; --ink: #1d2126; --muted: #6a717b; --line: #e3dfd6;
+    --accent: #c2410c; --accent-soft: #fdeee4; --good: #0f766e; --good-soft: #e1f3f0; --chip: #efece5;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #15171a; --card: #1e2126; --ink: #eceae5; --muted: #9aa1ab; --line: #30343b;
+      --accent: #fb923c; --accent-soft: #3a2415; --good: #5eead4; --good-soft: #12332f; --chip: #2a2e34;
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink);
+    font: 15px/1.5 -apple-system, "PingFang TC", "Noto Sans TC", "Microsoft JhengHei", sans-serif; }
+  .wrap { max-width: 1040px; margin: 0 auto; padding: 20px 16px 60px; }
+  h1 { font-size: 22px; margin: 0 0 2px; letter-spacing: .02em; }
+  .sub { color: var(--muted); font-size: 13px; margin-bottom: 14px; }
+  .notice { background: var(--accent-soft); color: var(--accent); border-radius: 8px; padding: 8px 12px; font-size: 13px; margin-bottom: 12px; }
+  .bar { position: sticky; top: 0; z-index: 5; background: var(--bg); padding: 8px 0 10px; border-bottom: 1px solid var(--line); }
+  .row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: 8px; }
+  .seg { display: inline-flex; background: var(--chip); border-radius: 999px; padding: 3px; }
+  .seg button { border: 0; background: none; color: var(--muted); font: inherit; font-size: 14px; padding: 5px 14px; border-radius: 999px; cursor: pointer; }
+  .seg button.on { background: var(--card); color: var(--ink); font-weight: 600; box-shadow: 0 1px 2px rgba(0,0,0,.12); }
+  select, input[type=search] { font: inherit; font-size: 14px; color: var(--ink); background: var(--card);
+    border: 1px solid var(--line); border-radius: 8px; padding: 6px 10px; min-width: 0; }
+  input[type=search] { flex: 1 1 160px; }
+  label.chk { font-size: 13px; color: var(--muted); display: inline-flex; gap: 4px; align-items: center; }
+  .count { color: var(--muted); font-size: 13px; margin: 12px 0 8px; }
+  .list { display: grid; gap: 8px; }
+  .item { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px;
+    display: grid; grid-template-columns: 1fr auto; gap: 4px 16px; align-items: center; }
+  .shop { font-weight: 600; }
+  .shop a { color: inherit; text-decoration: none; }
+  .shop a:hover { text-decoration: underline; }
+  .plan { font-size: 14px; }
+  .meta { color: var(--muted); font-size: 12.5px; display: flex; flex-wrap: wrap; gap: 4px 10px; align-items: center; }
+  .tag { background: var(--chip); border-radius: 4px; padding: 0 6px; font-size: 12px; color: var(--ink); }
+  .meta a { color: var(--muted); }
+  .prices { text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
+  .fn { font-size: 20px; font-weight: 700; color: var(--accent); }
+  .fn small { font-size: 12px; font-weight: 400; color: var(--muted); margin-right: 3px; }
+  .off { font-size: 13px; color: var(--muted); }
+  .off del { margin-left: 3px; }
+  .save { display: inline-block; margin-top: 2px; background: var(--good-soft); color: var(--good); border-radius: 4px; padding: 0 6px; font-size: 12.5px; font-weight: 600; }
+  .na { color: var(--muted); font-size: 13px; }
+  .empty { text-align: center; color: var(--muted); padding: 40px 0; }
+  footer { color: var(--muted); font-size: 12px; margin-top: 24px; line-height: 1.7; }
+  @media (max-width: 520px) { .fn { font-size: 18px; } .item { padding: 10px 12px; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>高雄住宿・休息比價</h1>
+  <div class="sub" id="sub">載入中…</div>
+  <div class="notice" id="sample" hidden>目前是範例資料（10 家店）。到 GitHub 的 Actions 頁面執行一次「更新 FunNow 價格」，就會換成完整資料。</div>
+
+  <div class="bar">
+    <div class="seg" id="type">
+      <button data-v="" class="on">全部</button><button data-v="休息">休息</button><button data-v="住宿">住宿</button>
+    </div>
+    <div class="row">
+      <select id="hours" aria-label="時數"><option value="">時數不限</option></select>
+      <select id="district" aria-label="行政區"><option value="">全部行政區</option></select>
+      <select id="sort" aria-label="排序">
+        <option value="save">省最多</option>
+        <option value="pct">折扣最深</option>
+        <option value="price">價格最低</option>
+        <option value="rating">評分最高</option>
+      </select>
+      <input type="search" id="q" placeholder="搜尋店名或房型">
+      <label class="chk"><input type="checkbox" id="avail" checked>只看可預訂</label>
+    </div>
+  </div>
+
+  <div class="count" id="count"></div>
+  <div class="list" id="list"></div>
+
+  <footer>
+    FunNow 價：FunNow 網站上該方案的起價，實際金額依日期時段而異。<br>
+    官方價：FunNow 頁面標示的店家定價；若在 official.json 填了官網實際售價，會標「官網」並優先採用。<br>
+    每列右下角的 # 編號是方案編號，填 official.json 時使用。
+  </footer>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const money = n => n.toLocaleString('en-US');
+let rows = [], state = { type: '' };
+
+async function load() {
+  let data, official = {};
+  try {
+    data = await (await fetch('data.json?t=' + Date.now())).json();
+  } catch (e) {
+    $('sub').textContent = '讀不到 data.json';
+    return;
+  }
+  try { official = await (await fetch('official.json?t=' + Date.now())).json(); } catch (e) {}
+
+  for (const b of data.branches) for (const p of b.products) {
+    const o = official[p.id];
+    const manual = o && Number(o.price) > 0;
+    const off = manual ? Number(o.price) : p.official;
+    const cmp = p.price != null && off != null;
+    rows.push({
+      b, p, off, manual, offUrl: manual ? o.url : null,
+      save: cmp ? off - p.price : null,
+      pct: cmp && off > 0 ? p.price / off : null,
+    });
+  }
+  $('sub').textContent = `FunNow 價 vs 官方價｜${data.branches.length} 家店、${rows.length} 個方案｜更新：${data.updated}`;
+  $('sample').hidden = !data.sample;
+
+  const ds = [...new Set(data.branches.map(b => b.district).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'zh-Hant'));
+  $('district').insertAdjacentHTML('beforeend', ds.map(d => `<option>${esc(d)}</option>`).join(''));
+  const hs = [...new Set(rows.map(r => r.p.hours).filter(h => h != null))].sort((a, b) => a - b);
+  $('hours').insertAdjacentHTML('beforeend', hs.map(h => `<option value="${h}">${h} 小時</option>`).join(''));
+  render();
+}
+
+function render() {
+  const q = $('q').value.trim().toLowerCase(), d = $('district').value, h = $('hours').value, s = $('sort').value;
+  let out = rows.filter(r =>
+    (!state.type || r.p.type === state.type) &&
+    (!d || r.b.district === d) &&
+    (!h || String(r.p.hours) === h) &&
+    (!$('avail').checked || r.p.price != null) &&
+    (!q || (r.b.name + ' ' + r.p.name).toLowerCase().includes(q)));
+  const last = (v, dir) => v == null ? Infinity : v * dir;   // 沒資料的排最後
+  const key = { save: r => last(r.save, -1), pct: r => last(r.pct, 1), price: r => last(r.p.price, 1), rating: r => last(r.b.rating, -1) }[s];
+  out.sort((a, b) => key(a) - key(b) || (b.b.reviews || 0) - (a.b.reviews || 0));
+
+  $('count').textContent = `${out.length} 個方案`;
+  $('list').innerHTML = out.length ? out.map(r => {
+    const { b, p } = r;
+    const g = 'https://www.google.com/search?q=' + encodeURIComponent(b.name + ' 官網');
+    const offLabel = r.manual ? '官網' : '官方';
+    const offTxt = r.off != null ? `${offLabel} <del>${money(r.off)}</del>` : '官方價未標示';
+    let save = '';
+    if (r.save != null && r.save > 0) save = `<span class="save">省 ${money(r.save)}・${(r.pct * 10).toFixed(1).replace(/\.0$/, '')} 折</span>`;
+    else if (r.save != null && r.save < 0) save = `<span class="save" style="background:var(--accent-soft);color:var(--accent)">官網便宜 ${money(-r.save)}</span>`;
+    else if (r.save === 0) save = `<span class="na">同價</span>`;
+    return `<div class="item">
+      <div>
+        <div class="shop"><a href="${esc(b.url)}" target="_blank" rel="noopener">${esc(b.name)}</a></div>
+        <div class="plan">${esc(p.name)}</div>
+        <div class="meta">
+          <span class="tag">${p.type}${p.hours != null ? ' ' + p.hours + 'h' : ''}</span>
+          <span>${esc(b.district)}</span>
+          ${b.rating != null ? `<span>★ ${b.rating}（${money(b.reviews || 0)}）</span>` : ''}
+          <a href="${esc(r.offUrl || g)}" target="_blank" rel="noopener">${r.offUrl ? '官網' : '查官網'}</a>
+          <span>#${esc(p.id)}</span>
+        </div>
+      </div>
+      <div class="prices">
+        ${p.price != null ? `<div class="fn"><small>FunNow</small>${money(p.price)}</div>` : `<div class="na">目前無法預訂</div>`}
+        <div class="off">${offTxt}</div>
+        ${save}
+      </div>
+    </div>`;
+  }).join('') : '<div class="empty">沒有符合的方案</div>';
+}
+
+$('type').addEventListener('click', e => {
+  if (e.target.tagName !== 'BUTTON') return;
+  state.type = e.target.dataset.v;
+  [...$('type').children].forEach(b => b.classList.toggle('on', b === e.target));
+  render();
+});
+['hours', 'district', 'sort', 'avail'].forEach(id => $(id).addEventListener('change', render));
+$('q').addEventListener('input', render);
+load();
+</script>
+</body>
+</html>
