@@ -1,6 +1,6 @@
 # 高雄住宿・休息比價（FunNow vs 官方價）
 
-每天自動抓 FunNow 高雄的住宿與休息方案，和店家官方定價比較，網頁放在 GitHub Pages。
+需要時手動抓 FunNow 高雄的住宿與休息方案，和店家官方定價比較，網頁放在 GitHub Pages。
 
 ## 檔案
 
@@ -8,9 +8,9 @@
 |---|---|
 | `index.html` | 比價網頁 |
 | `scrape.py` | 爬蟲（只用 Python 標準函式庫） |
-| `data.json` | 爬蟲產生的價格資料，排程會自動更新 |
+| `data.json` | 爬蟲產生的價格資料，手動執行時更新 |
 | `official.json` | 選填：自己查到的官網實際售價 |
-| `.github/workflows/update.yml` | 每天 06:17 自動執行爬蟲 |
+| `.github/workflows/update.yml` | 手動執行爬蟲（Actions → Run workflow） |
 
 ## 上線步驟
 
