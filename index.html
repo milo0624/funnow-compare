@@ -107,7 +107,7 @@
   <footer>
     FunNow 價：不指定日期時是該方案的起價；選了日期就是那一天最便宜的時段價，同一天不同時段有價差時會顯示「～最高價」。<br>
     可選的日期是更新當下 FunNow 開放預訂的範圍：休息約 7 天、住宿約 30 天。<br>
-    官方價：FunNow 頁面標示的店家定價；若在 official.json 填了官網實際售價，會標「官網」並優先採用。<br>
+    定價：FunNow 頁面標示的店家定價（牌價，通常偏高）。標「官網」的是實際查到的官網售價，會優先用來比；官網有分平日假日時，選到週六、週日用假日價，其餘用平日價。<br>
     每列右下角的 # 編號是方案編號，填 official.json 時使用。
   </footer>
 </div>
@@ -132,7 +132,7 @@ async function load() {
     const o = official[p.id];
     const manual = o && Number(o.price) > 0;
     const off = manual ? Number(o.price) : p.official;
-    rows.push({ b, p, off, manual, offUrl: manual ? o.url : null });
+    rows.push({ b, p, off, manual, o: manual ? o : null, offUrl: manual ? o.url : null });
   }
   $('sub').textContent = `FunNow 價 vs 官方價｜${data.branches.length} 家店、${rows.length} 個方案｜更新：${data.updated}`;
   $('sample').hidden = !data.sample;
@@ -162,6 +162,13 @@ function render() {
     const dp = day ? (r.p.days || {})[day] : null;
     r.fp = day ? (dp ? dp[0] : null) : r.p.price;
     r.fmax = dp && dp[1] > dp[0] ? dp[1] : null;
+    if (r.manual) {   // 官網價分平日／假日：選到週六日就用假日價
+      const hol = Number(r.o.holiday) > 0 ? Number(r.o.holiday) : null;
+      const wd = day ? new Date(...day.split('-').map((v, i) => i === 1 ? v - 1 : +v)).getDay() : null;
+      const isHol = wd === 0 || wd === 6;
+      r.off = isHol && hol ? hol : Number(r.o.price);
+      r.offLabel = hol == null ? '官網' : (isHol ? '官網假日' : '官網平日');
+    }
     const cmp = r.fp != null && r.off != null;
     r.save = cmp ? r.off - r.fp : null;
     r.pct = cmp && r.off > 0 ? r.fp / r.off : null;
@@ -181,8 +188,8 @@ function render() {
   $('list').innerHTML = out.length ? out.map(r => {
     const { b, p } = r;
     const g = 'https://www.google.com/search?q=' + encodeURIComponent(b.name + ' 官網');
-    const offLabel = r.manual ? '官網' : '官方';
-    const offTxt = r.off != null ? `${offLabel} <del>${money(r.off)}</del>` : '官方價未標示';
+    const offLabel = r.manual ? r.offLabel : '定價';
+    const offTxt = r.off != null ? (r.manual ? `${offLabel} <b>${money(r.off)}</b>` : `${offLabel} <del>${money(r.off)}</del>`) : '定價未標示';
     let save = '';
     if (r.save != null && r.save > 0) save = `<span class="save">省 ${money(r.save)}・${(r.pct * 10).toFixed(1).replace(/\.0$/, '')} 折</span>`;
     else if (r.save != null && r.save < 0) save = `<span class="save" style="background:var(--accent-soft);color:var(--accent)">${r.manual ? '官網便宜' : '比定價貴'} ${money(-r.save)}</span>`;
@@ -196,6 +203,7 @@ function render() {
           <span>${esc(b.district)}</span>
           ${b.rating != null ? `<span>★ ${b.rating}（${money(b.reviews || 0)}）</span>` : ''}
           <a href="${esc(r.offUrl || g)}" target="_blank" rel="noopener">${r.offUrl ? '官網' : '查官網'}</a>
+          ${r.manual && r.o.note ? `<span>${esc(r.o.note)}</span>` : ''}
           <span>#${esc(p.id)}</span>
         </div>
       </div>

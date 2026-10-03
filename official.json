@@ -1,4 +1,54 @@
 {
-  "_說明": "選填。想跟飯店官網的實際售價比，就在這裡填：方案編號（網頁上每列最右邊的 #編號）對應官網價與網址。有填的方案會優先用這個價格比，沒填的用 FunNow 頁面上的店家定價。",
-  "_範例_3031908708988": { "price": 850, "url": "https://飯店官網網址" }
+  "_說明": "官網實際售價。key 是方案編號（網頁每列的 #編號）；price 平日價、holiday 假日價（沒有就不填）、url 官網頁面、note 備註。查價日期：2026-10-03。",
+  "3272813219255": {
+    "price": 480,
+    "holiday": 580,
+    "url": "https://hubhotel.ai/booking/50"
+  },
+  "3272864616262": {
+    "price": 580,
+    "holiday": 680,
+    "url": "https://hubhotel.ai/booking/33",
+    "note": "另有 2H 送 1H 促銷：平日 480／假日 580"
+  },
+  "3272855551619": {
+    "price": 880,
+    "holiday": 880,
+    "url": "https://hubhotel.ai/booking/34"
+  },
+  "3674374299100": {
+    "price": 500,
+    "url": "https://yumie.flybooking.io/ghks",
+    "note": "官網只標平日價"
+  },
+  "3674364062042": {
+    "price": 600,
+    "url": "https://yumie.flybooking.io/ghks",
+    "note": "官網只標平日價"
+  },
+  "3674367332121": {
+    "price": 1080,
+    "url": "https://yumie.flybooking.io/ghks",
+    "note": "官網平日起價"
+  },
+  "3674387505880": {
+    "price": 1280,
+    "url": "https://yumie.flybooking.io/ghks",
+    "note": "官網平日起價"
+  },
+  "3674391952934": {
+    "price": 1680,
+    "url": "https://yumie.flybooking.io/ghks",
+    "note": "官網平日起價"
+  },
+  "3674384982371": {
+    "price": 1610,
+    "url": "https://book-directonline.com/properties/GoodHotelDirect",
+    "note": "10/6（二）雙床房不含早；21 點後入住 1,499；官網住宿價每天不同"
+  },
+  "3699082898762": {
+    "price": 580,
+    "url": "https://yumie.flybooking.io/ghkl/",
+    "note": "官網只標平日價"
+  }
 }
