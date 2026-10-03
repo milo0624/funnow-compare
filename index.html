@@ -69,6 +69,7 @@
       <button data-v="" class="on">全部</button><button data-v="休息">休息</button><button data-v="住宿">住宿</button>
     </div>
     <div class="row">
+      <select id="day" aria-label="日期"><option value="">不指定日期（起價）</option></select>
       <select id="hours" aria-label="時數"><option value="">時數不限</option></select>
       <select id="district" aria-label="行政區"><option value="">全部行政區</option></select>
       <select id="sort" aria-label="排序">
@@ -86,7 +87,8 @@
   <div class="list" id="list"></div>
 
   <footer>
-    FunNow 價：FunNow 網站上該方案的起價，實際金額依日期時段而異。<br>
+    FunNow 價：不指定日期時是該方案的起價；選了日期就是那一天最便宜的時段價，同一天不同時段有價差時會顯示「～最高價」。<br>
+    可選的日期是更新當下 FunNow 開放預訂的範圍：休息約 7 天、住宿約 30 天。<br>
     官方價：FunNow 頁面標示的店家定價；若在 official.json 填了官網實際售價，會標「官網」並優先採用。<br>
     每列右下角的 # 編號是方案編號，填 official.json 時使用。
   </footer>
@@ -112,12 +114,7 @@ async function load() {
     const o = official[p.id];
     const manual = o && Number(o.price) > 0;
     const off = manual ? Number(o.price) : p.official;
-    const cmp = p.price != null && off != null;
-    rows.push({
-      b, p, off, manual, offUrl: manual ? o.url : null,
-      save: cmp ? off - p.price : null,
-      pct: cmp && off > 0 ? p.price / off : null,
-    });
+    rows.push({ b, p, off, manual, offUrl: manual ? o.url : null });
   }
   $('sub').textContent = `FunNow 價 vs 官方價｜${data.branches.length} 家店、${rows.length} 個方案｜更新：${data.updated}`;
   $('sample').hidden = !data.sample;
@@ -125,6 +122,13 @@ async function load() {
   const ds = [...new Set(data.branches.map(b => b.district).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'zh-Hant'));
   $('district').insertAdjacentHTML('beforeend', ds.map(d => `<option>${esc(d)}</option>`).join(''));
   const hs = [...new Set(rows.map(r => r.p.hours).filter(h => h != null))].sort((a, b) => a - b);
+  const wk = '日一二三四五六';
+  const days = [...new Set(rows.flatMap(r => Object.keys(r.p.days || {})))].sort();
+  $('day').insertAdjacentHTML('beforeend', days.map(k => {
+    const [y, m, dd] = k.split('-').map(Number);
+    return `<option value="${k}">${m}/${dd}（${wk[new Date(y, m - 1, dd).getDay()]}）</option>`;
+  }).join(''));
+  if (!days.length) $('day').options[0].textContent = '日期（更新價格後可選）';
   $('hotels').innerHTML = data.branches.map(b => b.name).sort((a, b) => a.localeCompare(b, 'zh-Hant')).map(n => `<option value="${esc(n)}">`).join('');
   $('hours').insertAdjacentHTML('beforeend', hs.map(h => `<option value="${h}">${h} 小時</option>`).join(''));
   render();
@@ -134,15 +138,24 @@ function render() {
   const norm = t => t.toLowerCase().replace(/\s+/g, '');
   const hn = norm($('hotel').value);
   const q = $('q').value.trim().toLowerCase(), d = $('district').value, h = $('hours').value, s = $('sort').value;
+  const day = $('day').value;
+  for (const r of rows) {   // 依所選日期決定這次要比的 FunNow 價
+    const dp = day ? (r.p.days || {})[day] : null;
+    r.fp = day ? (dp ? dp[0] : null) : r.p.price;
+    r.fmax = dp && dp[1] > dp[0] ? dp[1] : null;
+    const cmp = r.fp != null && r.off != null;
+    r.save = cmp ? r.off - r.fp : null;
+    r.pct = cmp && r.off > 0 ? r.fp / r.off : null;
+  }
   let out = rows.filter(r =>
     (!state.type || r.p.type === state.type) &&
     (!d || r.b.district === d) &&
     (!h || String(r.p.hours) === h) &&
-    (!$('avail').checked || r.p.price != null) &&
+    (!$('avail').checked || r.fp != null) &&
     (!hn || norm(r.b.name).includes(hn)) &&
     (!q || r.p.name.toLowerCase().includes(q)));
   const last = (v, dir) => v == null ? Infinity : v * dir;   // 沒資料的排最後
-  const key = { save: r => last(r.save, -1), pct: r => last(r.pct, 1), price: r => last(r.p.price, 1), rating: r => last(r.b.rating, -1) }[s];
+  const key = { save: r => last(r.save, -1), pct: r => last(r.pct, 1), price: r => last(r.fp, 1), rating: r => last(r.b.rating, -1) }[s];
   out.sort((a, b) => key(a) - key(b) || (b.b.reviews || 0) - (a.b.reviews || 0));
 
   $('count').textContent = `${out.length} 個方案`;
@@ -153,7 +166,7 @@ function render() {
     const offTxt = r.off != null ? `${offLabel} <del>${money(r.off)}</del>` : '官方價未標示';
     let save = '';
     if (r.save != null && r.save > 0) save = `<span class="save">省 ${money(r.save)}・${(r.pct * 10).toFixed(1).replace(/\.0$/, '')} 折</span>`;
-    else if (r.save != null && r.save < 0) save = `<span class="save" style="background:var(--accent-soft);color:var(--accent)">官網便宜 ${money(-r.save)}</span>`;
+    else if (r.save != null && r.save < 0) save = `<span class="save" style="background:var(--accent-soft);color:var(--accent)">${r.manual ? '官網便宜' : '比定價貴'} ${money(-r.save)}</span>`;
     else if (r.save === 0) save = `<span class="na">同價</span>`;
     return `<div class="item">
       <div>
@@ -168,7 +181,7 @@ function render() {
         </div>
       </div>
       <div class="prices">
-        ${p.price != null ? `<div class="fn"><small>FunNow</small>${money(p.price)}</div>` : `<div class="na">目前無法預訂</div>`}
+        ${r.fp != null ? `<div class="fn"><small>FunNow</small>${money(r.fp)}${r.fmax ? `<small style="margin:0 0 0 2px">～${money(r.fmax)}</small>` : ''}</div>` : `<div class="na">${day ? '這天無法預訂' : '目前無法預訂'}</div>`}
         <div class="off">${offTxt}</div>
         ${save}
       </div>
@@ -182,7 +195,7 @@ $('type').addEventListener('click', e => {
   [...$('type').children].forEach(b => b.classList.toggle('on', b === e.target));
   render();
 });
-['hours', 'district', 'sort', 'avail'].forEach(id => $(id).addEventListener('change', render));
+['day', 'hours', 'district', 'sort', 'avail'].forEach(id => $(id).addEventListener('change', render));
 $('q').addEventListener('input', render);
 $('hotel').addEventListener('input', render);
 load();

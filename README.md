@@ -20,6 +20,10 @@
 4. Actions → 「更新 FunNow 價格」→ Run workflow，跑完後 `data.json` 就是完整資料。
 5. 網址：`https://<你的帳號>.github.io/funnow-compare/`
 
+## 選日期
+
+網頁上可選日期，顯示那一天的 FunNow 價（當日最便宜時段）。可選範圍是更新當下 FunNow 開放預訂的日期：休息約 7 天、住宿約 30 天。更新一次約 8 分鐘。
+
 ## 填官網實際售價（選填）
 
 `official.json` 的格式：方案編號（網頁每列的 `#編號`）對應價格與網址。

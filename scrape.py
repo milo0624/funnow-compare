@@ -18,6 +18,7 @@ CATEGORIES = {64: "住宿", 65: "休息"}
 CITY = "高雄"                   # 只留地址在這個縣市的店家
 MAX_PAGES = 15
 DELAY = 1.0                     # 每次請求間隔（秒），不要調太小
+API_DELAY = 0.6                 # 查各日期價格的間隔（秒）
 UA = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0 Safari/537.36"
 
 
@@ -31,6 +32,24 @@ def get(url, tries=3):
             print(f"  ! {url} 失敗 ({e})，第 {i + 1} 次", file=sys.stderr)
             time.sleep(3 * (i + 1))
     return None
+
+
+def day_prices(pid):
+    """各日期的 FunNow 價：{"2026-10-04": [當日最低, 當日最高]}。抓不到就回傳空的。"""
+    raw = get(f"{BASE}/v2/funnow/pub/product/{pid}/arrivaltimes?count=1&time_slots_type=0", tries=2)
+    time.sleep(API_DELAY)
+    try:
+        slots = (json.loads(raw).get("data") or {}).get("data") or []
+    except (TypeError, ValueError, AttributeError):
+        return {}
+    days = {}
+    for sl in slots:
+        d, price = str(sl.get("promostart", ""))[:10], sl.get("discount")
+        if len(d) != 10 or not isinstance(price, (int, float)) or price <= 0:
+            continue
+        lo, hi = days.get(d, (price, price))
+        days[d] = (min(lo, price), max(hi, price))
+    return {d: [int(v[0]), int(v[1])] for d, v in sorted(days.items())}
 
 
 def num(s):
@@ -117,6 +136,8 @@ def main():
             failed += 1
             continue
         if b["city"].startswith(CITY) and b["products"]:
+            for p in b["products"]:
+                p["days"] = day_prices(p["id"])
             branches.append(b)
         if n % 20 == 0:
             print(f"  {n}/{len(ids)}")
