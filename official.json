@@ -1,5 +1,5 @@
 {
-  "_說明": "官網實際售價。key 是方案編號（網頁每列的 #編號）；price 平日價、holiday 假日價（沒有就不填）、url 官網頁面、note 備註。查價日期：2026-10-03。",
+  "_說明": "官網實際售價。key 是方案編號（網頁每列的 #編號）；price 平日價、holiday 假日價（沒有就不填）、url 官網頁面、note 備註。查價日期：一心館與民生館 2026-10-03，忠孝館休息 2026-10-29。",
   "3272813219255": {
     "price": 480,
     "holiday": 580,
@@ -17,29 +17,29 @@
     "url": "https://hubhotel.ai/booking/34"
   },
   "3674374299100": {
-    "price": 500,
+    "price": 560,
     "url": "https://yumie.flybooking.io/ghks",
-    "note": "官網只標平日價"
+    "note": "官網預約清單價（10/29 查）；頁首文字寫的平日價已不同"
   },
   "3674364062042": {
-    "price": 600,
+    "price": 660,
     "url": "https://yumie.flybooking.io/ghks",
-    "note": "官網只標平日價"
+    "note": "官網預約清單價（10/29 查）；頁首文字寫的平日價已不同"
   },
   "3674367332121": {
-    "price": 1080,
+    "price": 1060,
     "url": "https://yumie.flybooking.io/ghks",
-    "note": "官網平日起價"
+    "note": "官網預約清單價（10/29 查）；頁首文字寫的平日價已不同"
   },
   "3674387505880": {
-    "price": 1280,
+    "price": 1260,
     "url": "https://yumie.flybooking.io/ghks",
-    "note": "官網平日起價"
+    "note": "官網預約清單價（10/29 查）；頁首文字寫的平日價已不同"
   },
   "3674391952934": {
-    "price": 1680,
+    "price": 1660,
     "url": "https://yumie.flybooking.io/ghks",
-    "note": "官網平日起價"
+    "note": "官網預約清單價（10/29 查）；頁首文字寫的平日價已不同"
   },
   "3674384982371": {
     "price": 1610,
